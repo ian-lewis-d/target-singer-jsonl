@@ -6,6 +6,7 @@ import json
 import logging
 import sys
 import time
+import decimal
 from datetime import datetime
 from functools import reduce
 from pathlib import Path
@@ -209,7 +210,7 @@ def main():
 
     if args.config:
         with open(args.config) as input:
-            config = json.load(input)
+            config = json.load(input, parse_float=decimal.Decimal)
     else:
         config = {}
 
