@@ -34,6 +34,13 @@ file_timestamp = datetime.now().strftime("%Y%m%dT%H%M%S%z")
 target_start_timestamp = datetime.now().isoformat()
 
 
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return str(o)
+        return super(DecimalEncoder, self).default(o)
+
+
 def join_slash(a, b):
     return a.rstrip("/") + "/" + b.lstrip("/")
 
@@ -114,7 +121,7 @@ def persist_lines(config, lines):
     # Loop over lines from stdin
     for line in lines:
         try:
-            message = json.loads(line)
+            message = json.loads(line, parse_float=decimal.Decimal)
         except json.decoder.JSONDecodeError:
             logger.error(f"Unable to parse:\n{line}")
             raise
@@ -160,7 +167,7 @@ def persist_lines(config, lines):
                 )
             # Queue message for write
             state = None
-            stream_lines[stream].append(json.dumps(message))
+            stream_lines[stream].append(json.dumps(message, cls=DecimalEncoder))
 
         elif t == "SCHEMA":
             schemas[stream] = message["schema"]
@@ -184,7 +191,7 @@ def persist_lines(config, lines):
                 for col in {"_sdc_sequence", "_sdc_table_version"}:
                     properties_dict[col] = {"type": ["null", "integer"]}
             # Queue message for write
-            stream_lines[stream].append(json.dumps(message))
+            stream_lines[stream].append(json.dumps(message, cls=DecimalEncoder))
 
         elif t == "STATE":
             # persisting STATE messages is problematic when splitting records into separate
